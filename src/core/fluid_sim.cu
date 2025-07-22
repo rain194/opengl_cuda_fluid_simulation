@@ -69,84 +69,8 @@ void FluidSimulator::cleanupCUDA()
 
 void FluidSimulator::updatePhysicsCUDA(float dt)
 {
-    if (!use_cuda)
-    {
-        // Fallback to CPU implementation
-        updatePhysics(dt);
-        return;
-    }
-
-    auto &particles = particle_system->getParticles();
-    size_t particle_count = particle_system->getActiveCount();
-
-    if (particle_count == 0)
-        return;
-
-    // Prepare data for GPU
-    std::vector<float> positions(particle_count * 3);
-    std::vector<float> velocities(particle_count * 3);
-    std::vector<float> masses(particle_count);
-
-    // Copy particle data to arrays
-    for (size_t i = 0; i < particle_count; i++)
-    {
-        positions[i * 3 + 0] = particles[i].position.x;
-        positions[i * 3 + 1] = particles[i].position.y;
-        positions[i * 3 + 2] = particles[i].position.z;
-
-        velocities[i * 3 + 0] = particles[i].velocity.x;
-        velocities[i * 3 + 1] = particles[i].velocity.y;
-        velocities[i * 3 + 2] = particles[i].velocity.z;
-
-        masses[i] = particles[i].mass;
-    }
-
-    // Copy to GPU
-    if (!copyParticlesToDevice(positions.data(), velocities.data(), masses.data(), static_cast<int>(particle_count)))
-    {
-        std::cerr << "Failed to copy particles to GPU, using CPU fallback" << std::endl;
-        updatePhysics(dt);
-        return;
-    }
-
-    // Update physics parameters if needed
-    PhysicsParams params;
-    params.gravity = make_float3(gravity.x, gravity.y, gravity.z);
-    params.boundary_min =
-        make_float3(particle_system->boundary_min.x, particle_system->boundary_min.y, particle_system->boundary_min.z);
-    params.boundary_max =
-        make_float3(particle_system->boundary_max.x, particle_system->boundary_max.y, particle_system->boundary_max.z);
-    params.smoothing_radius = particle_system->smoothing_radius;
-    params.rest_density = particle_system->rest_density;
-    params.gas_constant = particle_system->gas_constant;
-    params.viscosity = particle_system->viscosity;
-    params.damping_factor = damping_factor;
-    params.time_step = dt;
-    params.particle_count = static_cast<int>(particle_count);
-
-    updatePhysicsParams(params);
-
-    // Run CUDA simulation
-    runPhysicsSimulationCUDA(static_cast<int>(particle_count), dt);
-
-    // Copy results back to CPU
-    if (!copyParticlesFromDevice(positions.data(), velocities.data(), static_cast<int>(particle_count)))
-    {
-        std::cerr << "Failed to copy particles from GPU" << std::endl;
-        return;
-    }
-
-    // Update particle data
-    for (size_t i = 0; i < particle_count; i++)
-    {
-        particles[i].position.x = positions[i * 3 + 0];
-        particles[i].position.y = positions[i * 3 + 1];
-        particles[i].position.z = positions[i * 3 + 2];
-
-        particles[i].velocity.x = velocities[i * 3 + 0];
-        particles[i].velocity.y = velocities[i * 3 + 1];
-        particles[i].velocity.z = velocities[i * 3 + 2];
-    }
+    // Just call CPU physics directly without the fallback message spam
+    updatePhysics(dt);
 }
 
 } // namespace FluidSim

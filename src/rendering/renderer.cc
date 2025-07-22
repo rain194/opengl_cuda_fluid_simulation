@@ -209,34 +209,37 @@ void Renderer::renderFrame(const ParticleSystem *particle_system)
 {
     updateTiming();
 
+    std::cout << "=== RENDER FRAME DEBUG ===" << std::endl;
+
     // Clear buffers
     glClearColor(settings.background_color.r, settings.background_color.g, settings.background_color.b, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    std::cout << "Cleared buffers" << std::endl;
 
     // Setup camera matrices
     setupMatrices();
-
-    // Render scene elements
-    if (settings.show_grid)
-    {
-        renderGrid();
-    }
-
-    if (settings.show_boundaries && particle_system)
-    {
-        renderBoundaries(particle_system->boundary_min, particle_system->boundary_max);
-    }
+    std::cout << "Setup matrices" << std::endl;
 
     // Render particles
     if (particle_system && particle_system->getActiveCount() > 0)
     {
+        std::cout << "Attempting to render " << particle_system->getActiveCount() << " particles" << std::endl;
         renderParticles(particle_system);
     }
-
-    // Render UI overlay
-    renderUI();
+    else
+    {
+        std::cout << "No particles to render!" << std::endl;
+    }
 
     // Check for OpenGL errors
+    GLenum error = glGetError();
+    if (error != GL_NO_ERROR)
+    {
+        std::cout << "OpenGL error: " << error << std::endl;
+    }
+
+    std::cout << "Swapping buffers..." << std::endl;
+
     checkGLError("renderFrame");
 }
 
@@ -247,50 +250,57 @@ void Renderer::render(const ParticleSystem *particle_system)
 
 void Renderer::renderParticles(const ParticleSystem *particle_system)
 {
-    if (!particle_system || particle_system->getActiveCount() == 0)
-        return;
+    std::cout << "renderParticles called" << std::endl;
 
-    if (settings.render_as_spheres && sphere_shader)
+    if (!particle_system || particle_system->getActiveCount() == 0)
     {
-        renderParticlesAsSpheres(particle_system);
+        std::cout << "No particles available" << std::endl;
+        return;
     }
-    else if (settings.enable_instancing)
-    {
-        renderParticlesInstanced(particle_system);
-    }
-    else
-    {
-        renderParticlesAsPoints(particle_system);
-    }
+
+    std::cout << "Calling renderParticlesAsPoints..." << std::endl;
+    renderParticlesAsPoints(particle_system);
 }
 
 void Renderer::renderParticlesAsPoints(const ParticleSystem *particle_system)
 {
-    if (!particle_shader)
-        return;
+    std::cout << "renderParticlesAsPoints started" << std::endl;
 
+    if (!particle_shader)
+    {
+        std::cout << "ERROR: No particle shader!" << std::endl;
+        return;
+    }
+
+    std::cout << "Using particle shader..." << std::endl;
     particle_shader->use();
 
     // Set uniforms
     glm::mat4 view = camera->getViewMatrix();
     glm::mat4 projection = camera->getProjectionMatrix((float)window_width / window_height);
 
+    std::cout << "Setting uniforms..." << std::endl;
     particle_shader->setMat4("view", view);
     particle_shader->setMat4("projection", projection);
-    particle_shader->setFloat("particle_size", 5.0f);
-    particle_shader->setVec3("base_color", glm::vec3(1.0f, 1.0f, 1.0f));
+    particle_shader->setFloat("particle_size", 50.0f);                   // VERY BIG SIZE
+    particle_shader->setVec3("base_color", glm::vec3(1.0f, 0.0f, 0.0f)); // RED COLOR
 
-    // Prepare particle data
-    const auto &particles = particle_system->getParticles();
-    std::vector<glm::vec3> colors(particle_system->getActiveCount(), glm::vec3(0.2f, 0.6f, 1.0f));
+    // Prepare simple color data
+    std::vector<glm::vec3> colors(particle_system->getActiveCount(), glm::vec3(1.0f, 0.0f, 0.0f));
 
-    // Update buffer data
-    buffer_manager->updateParticleData(particles, colors, particle_system->getActiveCount());
+    std::cout << "Updating buffer data..." << std::endl;
+    buffer_manager->updateParticleData(particle_system->getParticles(), colors, particle_system->getActiveCount());
 
-    // Render
+    // Enable point size
     glEnable(GL_PROGRAM_POINT_SIZE);
+    glPointSize(50.0f); // Also set fixed point size
+
+    std::cout << "Calling buffer_manager->renderParticles()..." << std::endl;
     buffer_manager->renderParticles();
+
     glDisable(GL_PROGRAM_POINT_SIZE);
+
+    std::cout << "renderParticlesAsPoints completed" << std::endl;
 }
 
 void Renderer::renderParticlesAsSpheres(const ParticleSystem *particle_system)

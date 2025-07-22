@@ -104,41 +104,34 @@ class FluidSimulationApp
 
         std::cout << "\n🚀 Starting simulation loop...\n" << std::endl;
 
-        try
+        while (running && !glfwWindowShouldClose(window))
         {
-            while (running && !glfwWindowShouldClose(window))
-            {
-                frame_timer.start();
+            std::cout << "=== MAIN LOOP ITERATION ===" << std::endl;
 
-                // Process input
-                glfwPollEvents();
-                processInput();
+            frame_timer.start();
 
-                // Update simulation
-                updateSimulation();
+            // Process input
+            glfwPollEvents();
+            processInput();
+            std::cout << "Input processed" << std::endl;
 
-                // Render frame
-                renderFrame();
+            // Update simulation
+            updateSimulation();
+            std::cout << "Simulation updated" << std::endl;
 
-                // Update timing and statistics
-                updateStatistics();
+            // Render frame
+            renderFrame();
+            std::cout << "Frame rendered" << std::endl;
 
-                // Print periodic status
-                printPeriodicStatus();
+            // Update timing and statistics
+            updateStatistics();
 
-                frame_count++;
+            // Print periodic status
+            printPeriodicStatus();
 
-                // Add error checking
-                GLenum gl_error = glGetError();
-                if (gl_error != GL_NO_ERROR)
-                {
-                    std::cerr << "OpenGL error in main loop: " << gl_error << std::endl;
-                }
-            }
-        }
-        catch (const std::exception &e)
-        {
-            std::cerr << "Exception in main loop: " << e.what() << std::endl;
+            frame_count++;
+
+            std::cout << "Frame " << frame_count << " completed" << std::endl;
         }
 
         printShutdownSummary();
@@ -506,17 +499,32 @@ class FluidSimulationApp
 
     void renderFrame()
     {
-        if (renderer && simulator)
+        if (!renderer || !simulator)
         {
-            render_timer.start();
-            renderer->renderFrame(simulator->getParticleSystem());
-            glfwSwapBuffers(window);
-            float render_time = render_timer.stop();
-
-            // Update render performance
-            auto &runtime = ConfigManager::getMutableRuntimeConstants();
-            runtime.rendering_time_ms = render_time;
+            std::cout << "Renderer or simulator is null!" << std::endl;
+            return;
         }
+
+        std::cout << "Starting render frame..." << std::endl;
+
+        render_timer.start();
+
+        // Clear and render
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        // Render the scene
+        renderer->renderFrame(simulator->getParticleSystem());
+
+        // Swap buffers
+        glfwSwapBuffers(window);
+
+        float render_time = render_timer.stop();
+
+        std::cout << "Render frame completed in " << render_time << "ms" << std::endl;
+
+        // Update render performance
+        auto &runtime = ConfigManager::getMutableRuntimeConstants();
+        runtime.rendering_time_ms = render_time;
     }
 
     // === STATISTICS AND MONITORING ===

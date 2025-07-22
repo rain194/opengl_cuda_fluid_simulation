@@ -320,13 +320,25 @@ void BufferManager::updateParticlePositions(const std::vector<glm::vec3> &positi
 
 void BufferManager::renderParticles()
 {
-    if (!buffers_initialized || current_particle_count == 0)
-        return;
+    std::cout << "BufferManager::renderParticles() called" << std::endl;
+    std::cout << "current_particle_count: " << current_particle_count << std::endl;
+    std::cout << "buffers_initialized: " << buffers_initialized << std::endl;
 
+    if (!buffers_initialized || current_particle_count == 0)
+    {
+        std::cout << "Cannot render - no buffers or particles" << std::endl;
+        return;
+    }
+
+    std::cout << "Binding VAO: " << particle_vao << std::endl;
     glBindVertexArray(particle_vao);
+
+    std::cout << "Drawing " << current_particle_count << " points" << std::endl;
     glDrawArrays(GL_POINTS, 0, current_particle_count);
+
     glBindVertexArray(0);
 
+    std::cout << "BufferManager::renderParticles() completed" << std::endl;
     checkGLError("renderParticles");
 }
 

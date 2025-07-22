@@ -150,20 +150,13 @@ void FluidSimulator::update(float delta_time)
 
 void FluidSimulator::updatePhysics(float dt)
 {
-    if (use_cuda)
-    {
-        updatePhysicsCUDA(dt);
-    }
-    else
-    {
-        // CPU physics implementation
-        findNeighbors();
-        calculateDensities();
-        calculatePressures();
-        calculateForces();
-        integrateMotion(dt);
-        handleBoundaryCollisions();
-    }
+    // Simple physics update - don't call CUDA version
+    findNeighbors();
+    calculateDensities();
+    calculatePressures();
+    calculateForces();
+    integrateMotion(dt);
+    handleBoundaryCollisions();
 }
 
 // SPH Physics Implementation (CPU)
@@ -328,7 +321,7 @@ void FluidSimulator::calculateForces()
     auto &particles = particle_system->getParticles();
     size_t particle_count = particle_system->getActiveCount();
 
-    // Apply gravity to all particles
+    // Simple gravity application
     for (size_t i = 0; i < particle_count; i++)
     {
         particles[i].acceleration = gravity;
